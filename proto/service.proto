@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package gonetconfig;
+
+option go_package = "github.com/amb1s1/gonetconfig/proto";
+
+message Device {
+    optional string name = 1;
+    optional string vendor = 2;
+    optional string model = 3; 
+}
+
+enum ConfigGenType {
+    CGT_FULL = 0;
+    CGT_PARTIAL = 1;
+}
+
+message ConfigFeature {
+	optional string name = 1;
+	optional int32 version = 2;
+	optional string configuration = 3;
+}
+
+message ConfigGenRequest {
+    optional ConfigGenType config_gen_type = 1;
+    optional Device device = 2;
+}
+
+message ConfigGenResponse {
+    optional string status = 1;
+    optional ConfigFeature config_feature = 2; 
+}
+service GoNetConfigService {
+    rpc GetConfigGen(ConfigGenRequest) returns (ConfigGenResponse);
+}
