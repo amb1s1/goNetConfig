@@ -2,21 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net"
 	"reflect"
 
 	"github.com/amb1s1/gonetconfig/base"
 	"github.com/amb1s1/gonetconfig/features/aaa"
-	"google.golang.org/grpc"
 
 	pb "github.com/amb1s1/gonetconfig/proto"
-)
-
-const (
-	protocol = "tcp"
-	address  = "localhost:50051"
 )
 
 var (
@@ -28,6 +20,10 @@ var (
 
 type server struct {
 	pb.UnimplementedGoNetConfigServiceServer
+}
+
+func NewServer() *server {
+	return &server{}
 }
 
 type generatorsRegistry struct {
@@ -59,19 +55,6 @@ func (g *generatorsRegistry) RegisterFeatures() error {
 		}
 		g.generators[kind] = generator()
 		g.generatorType = append(g.generatorType, kind)
-	}
-	return nil
-}
-
-func Start() error {
-	lis, err := net.Listen(protocol, address)
-	if err != nil {
-		return errors.New(fmt.Sprintf("failed to open port, error: %v", err))
-	}
-	s := grpc.NewServer()
-	pb.RegisterGoNetConfigServiceServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		return errors.New(fmt.Sprintf("failed to serve: %v", err))
 	}
 	return nil
 }
