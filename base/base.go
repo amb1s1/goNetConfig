@@ -13,6 +13,6 @@ type Generator struct {
 }
 
 type GeneratorInt interface {
-	Render(context.Context) *pb.ConfigFeature
+	Render(context.Context, *pb.ConfigGenRequest, *pb.ConfigGenResponse) *pb.ConfigFeature
 	Generators() *Generator
 }

@@ -37,14 +37,12 @@ func newGeneratorsRegistry() *generatorsRegistry {
 	}
 }
 
-func (s *server) GetConfigGen(ctx context.Context, in *pb.GetConfigGenRequest) (*pb.GetConfigGenResponse, error) {
-	response := &pb.GetConfigGenResponse{}
+func (s *server) GetConfigGen(ctx context.Context, in *pb.ConfigGenRequest) (*pb.ConfigGenResponse, error) {
+	out := &pb.ConfigGenResponse{}
 	for _, g := range Registry.generatorType {
-		response = &pb.GetConfigGenResponse{
-			ConfigFeature: Registry.generators[g].Render(ctx),
-		}
+		out.ConfigFeature = Registry.generators[g].Render(ctx, in, out)
 	}
-	return response, nil
+	return out, nil
 }
 
 func (g *generatorsRegistry) RegisterFeatures() error {

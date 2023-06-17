@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/amb1s1/gonetconfig/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -21,12 +22,17 @@ func main() {
 	}
 	defer conn.Close()
 	c := pb.NewGoNetConfigServiceClient(conn)
-	request := &pb.GetConfigGenRequest{}
+
+	request := &pb.ConfigGenRequest{
+		Device: &pb.Device{
+			Name:   proto.String("router1"),
+			Vendor: pb.Vendor_VD_CISCO.Enum(),
+		},
+	}
 	response, err := c.GetConfigGen(ctx, request)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("results: ", response.GetConfigFeature().GetConfiguration())
 	fmt.Println("status: ", response.GetStatus())
-
 }

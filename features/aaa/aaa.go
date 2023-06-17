@@ -1,10 +1,7 @@
 package aaa
 
 import (
-	"bytes"
 	"context"
-	"log"
-	"text/template"
 
 	"github.com/amb1s1/gonetconfig/base"
 	"github.com/golang/protobuf/proto"
@@ -17,8 +14,8 @@ type Generator struct {
 }
 
 var (
-	aaaName   = "aaa"
-	generator = &base.Generator{
+	featureName = "aaa"
+	generator   = &base.Generator{
 		Name:   "aaa",
 		Vendor: "ciscoxr",
 	}
@@ -34,8 +31,8 @@ func New() base.GeneratorInt {
 	return gen
 }
 
-func (g *Generator) Render(ctx context.Context) *pb.ConfigFeature {
-	rendering := renderTemplate()
+func (g *Generator) Render(ctx context.Context, in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) *pb.ConfigFeature {
+	rendering := renderTemplate(in, out)
 	return &pb.ConfigFeature{
 		Name:          proto.String("aaa"),
 		Version:       proto.Int32(1),
@@ -47,17 +44,13 @@ func (g *Generator) Generators() *base.Generator {
 	return g.baseGen
 }
 
-func renderTemplate() string {
-	t, err := template.New("aaa").Parse(ciscoxrTemplate)
-	if err != nil {
-		log.Panic(err)
+func renderTemplate(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
+	var render string
+	switch in.GetDevice().GetVendor() {
+	case *pb.Vendor_VD_CISCO.Enum():
+		render = ciscoRender(in, out)
 	}
-	var tpl bytes.Buffer
-	err = t.Execute(&tpl, params{Secret: "password123"})
-	if err != nil {
-		log.Panic(err)
-	}
-	return tpl.String()
+	return render
 }
 
 func isSupported(model string) bool {
