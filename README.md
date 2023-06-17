@@ -95,9 +95,7 @@ The GoNetConfig application supports multiple configuration generators. Each gen
 
 The GoNetConfig project follows the following structure:
 
-- `main.go`: The entry point of the application that starts the gRPC server and registers the configuration generators
-
-.
+- `main.go`: The entry point of the application that starts the gRPC server and registers the configuration generators.
 
 - `service/service.go`: Contains the gRPC service implementation and the registry of configuration generators.
 
