@@ -18,17 +18,17 @@ var (
 	}
 )
 
+type generatorsRegistry struct {
+	generators    map[reflect.Type]base.GeneratorInt
+	generatorType []reflect.Type
+}
+
 type server struct {
 	pb.UnimplementedGoNetConfigServiceServer
 }
 
 func NewServer() *server {
 	return &server{}
-}
-
-type generatorsRegistry struct {
-	generators    map[reflect.Type]base.GeneratorInt
-	generatorType []reflect.Type
 }
 
 func newGeneratorsRegistry() *generatorsRegistry {
