@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -19,22 +18,22 @@ const (
 
 func main() {
 	if err := service.Registry.RegisterFeatures(); err != nil {
-		log.Fatalln(err)
+		log.Fatalf("RegisterFeatures(), failed to register features: %v", err)
 	}
 	if err := start(); err != nil {
-		log.Fatalln(err)
+		log.Fatalf("start(), failed to start the server: %v", err)
 	}
 }
 
 func start() error {
 	lis, err := net.Listen(protocol, address)
 	if err != nil {
-		return errors.New(fmt.Sprintf("failed to open port, error: %v", err))
+		return fmt.Errorf("Listen(), failed to open port: %w", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterGoNetConfigServiceServer(s, service.NewServer())
 	if err := s.Serve(lis); err != nil {
-		return errors.New(fmt.Sprintf("failed to serve: %v", err))
+		return fmt.Errorf("failed to serve: %w", err)
 	}
 	return nil
 }
