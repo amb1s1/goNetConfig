@@ -1,6 +1,4 @@
-Certainly! Here's the regenerated README file in Markdown format:
 
-```markdown
 # GoNetConfig
 
 GoNetConfig is a Go-based application that provides network configuration generation services. It uses gRPC for communication and supports multiple configuration feature generators.
