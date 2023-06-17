@@ -1,6 +1,4 @@
-Certainly! Here's the regenerated README file in Markdown format:
 
-```markdown
 # GoNetConfig
 
 GoNetConfig is a Go-based application that provides network configuration generation services. It uses gRPC for communication and supports multiple configuration feature generators.
@@ -97,9 +95,7 @@ The GoNetConfig application supports multiple configuration generators. Each gen
 
 The GoNetConfig project follows the following structure:
 
-- `main.go`: The entry point of the application that starts the gRPC server and registers the configuration generators
-
-.
+- `main.go`: The entry point of the application that starts the gRPC server and registers the configuration generators.
 
 - `service/service.go`: Contains the gRPC service implementation and the registry of configuration generators.
 
