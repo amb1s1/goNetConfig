@@ -6,13 +6,30 @@ option go_package = "github.com/amb1s1/gonetconfig/proto";
 
 message Device {
     optional string name = 1;
-    optional string vendor = 2;
-    optional string model = 3; 
+    optional Vendor vendor = 2;
+    optional Model model = 3;
+    optional OS os = 4; 
 }
 
 enum ConfigGenType {
     CGT_FULL = 0;
     CGT_PARTIAL = 1;
+}
+
+enum Vendor {
+    VD_UNKNOW = 0;
+    VD_CISCO = 1;
+    VD_CISCOXR = 2;
+    VD_JUNIPER = 3;
+    VD_ARISTA = 4;
+}
+
+enum Model {
+    MD_UNKNOW = 0;
+}
+
+enum OS {
+    OS_UNKNOW = 0;
 }
 
 message ConfigFeature {
