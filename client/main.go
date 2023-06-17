@@ -24,9 +24,11 @@ func main() {
 	c := pb.NewGoNetConfigServiceClient(conn)
 
 	request := &pb.ConfigGenRequest{
+		ConfigGenType: pb.ConfigGenType_CGT_FULL.Enum(),
 		Device: &pb.Device{
 			Name:   proto.String("router1"),
 			Vendor: pb.Vendor_VD_CISCO.Enum(),
+			Model:  pb.Model_MD_UNKNOW.Enum(),
 		},
 	}
 	response, err := c.GetConfigGen(ctx, request)

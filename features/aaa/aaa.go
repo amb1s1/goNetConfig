@@ -16,8 +16,8 @@ type Generator struct {
 var (
 	featureName = "aaa"
 	generator   = &base.Generator{
-		Name:   "aaa",
-		Vendor: "ciscoxr",
+		Name:            "aaa",
+		SupportedVendor: map[pb.Vendor]bool{pb.Vendor_VD_CISCO: true},
 	}
 )
 

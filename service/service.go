@@ -19,8 +19,7 @@ var (
 )
 
 type generatorsRegistry struct {
-	generators    map[reflect.Type]base.GeneratorInt
-	generatorType []reflect.Type
+	generators map[reflect.Type]base.GeneratorInt
 }
 
 type server struct {
@@ -38,9 +37,13 @@ func newGeneratorsRegistry() *generatorsRegistry {
 }
 
 func (s *server) GetConfigGen(ctx context.Context, in *pb.ConfigGenRequest) (*pb.ConfigGenResponse, error) {
-	out := &pb.ConfigGenResponse{}
-	for _, g := range Registry.generatorType {
-		out.ConfigFeature = Registry.generators[g].Render(ctx, in, out)
+	out := &pb.ConfigGenResponse{
+		ConfigFeature: &pb.ConfigFeature{},
+	}
+	for _, g := range Registry.generators {
+		if generatorSupported(g.Generators(), in) {
+			out.ConfigFeature = g.Render(ctx, in, out)
+		}
 	}
 	return out, nil
 }
@@ -52,7 +55,23 @@ func (g *generatorsRegistry) RegisterFeatures() error {
 			return fmt.Errorf("generator already exist, generator %v", kind)
 		}
 		g.generators[kind] = generator()
-		g.generatorType = append(g.generatorType, kind)
 	}
 	return nil
+}
+
+func generatorSupported(gen *base.Generator, in *pb.ConfigGenRequest) bool {
+	if !isVendorSupported(gen, in.Device.Vendor) {
+		return false
+	}
+	if !isModelSupported(gen, in.Device.Model) {
+		return false
+	}
+	return true
+}
+func isVendorSupported(gen *base.Generator, vendor *pb.Vendor) bool {
+	return vendor == nil || gen.SupportedVendor[*vendor] || *vendor == pb.Vendor_VD_UNKNOW
+}
+
+func isModelSupported(gen *base.Generator, model *pb.Model) bool {
+	return model == nil || gen.SupportedModel[*model] || *model == pb.Model_MD_UNKNOW
 }

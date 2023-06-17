@@ -7,9 +7,9 @@ import (
 )
 
 type Generator struct {
-	Name   string
-	Vendor string
-	Model  string
+	Name            string
+	SupportedVendor map[pb.Vendor]bool
+	SupportedModel  map[pb.Model]bool
 }
 
 type GeneratorInt interface {
