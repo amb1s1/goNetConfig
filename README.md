@@ -86,7 +86,7 @@ The GoNetConfig application supports multiple configuration generators. Each gen
 7. Run the following command to regenerate the gRPC code based on the updated `.proto` file:
 
    ```bash
-   protoc --go_out=. --go-grpc_out=. proto/service.proto
+   protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/service.proto
    ```
 
 8. Rebuild and run the GoNetConfig application to apply your changes.
