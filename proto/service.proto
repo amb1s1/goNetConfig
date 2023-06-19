@@ -5,10 +5,10 @@ package gonetconfig;
 option go_package = "github.com/amb1s1/gonetconfig/proto";
 
 message Device {
-    optional string name = 1;
-    optional Vendor vendor = 2;
-    optional Model model = 3;
-    optional OS os = 4; 
+    string name = 1;
+    Vendor vendor = 2;
+    Model model = 3;
+    OS os = 4; 
 }
 
 enum ConfigGenType {
@@ -33,19 +33,19 @@ enum OS {
 }
 
 message ConfigFeature {
-	optional string name = 1;
-	optional int32 version = 2;
-	optional string configuration = 3;
+	string name = 1;
+	int32 version = 2;
+	string configuration = 3;
 }
 
 message ConfigGenRequest {
-    optional ConfigGenType config_gen_type = 1;
-    optional Device device = 2;
+    ConfigGenType config_gen_type = 1;
+    Device device = 2;
 }
 
 message ConfigGenResponse {
-    optional string status = 1;
-    optional ConfigFeature config_feature = 2; 
+    string status = 1;
+    repeated ConfigFeature config_feature = 2; 
 }
 service GoNetConfigService {
     rpc GetConfigGen(ConfigGenRequest) returns (ConfigGenResponse);

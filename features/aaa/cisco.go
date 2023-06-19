@@ -6,7 +6,6 @@ import (
 	"text/template"
 
 	pb "github.com/amb1s1/gonetconfig/proto"
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -17,12 +16,12 @@ var (
 func ciscoRender(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
 	switch in.Device.GetModel() {
 	default:
-		return defaultAAA(out)
+		return defaultRender(out)
 	}
 }
 
-func defaultAAA(out *pb.ConfigGenResponse) string {
-	t, err := template.New("aaa").Parse(ciscoxrTemplate)
+func defaultRender(out *pb.ConfigGenResponse) string {
+	t, err := template.New(featureName).Parse(ciscoxrTemplate)
 	if err != nil {
 		log.Printf("New(), failed to parse template for %s feature", featureName)
 	}
@@ -32,9 +31,9 @@ func defaultAAA(out *pb.ConfigGenResponse) string {
 		log.Printf("Execute(), failed to Execute template for %s feature", featureName)
 	}
 	if tpl.String() == "" {
-		out.Status = proto.String("template not generated")
+		out.Status = "template not generated"
 	}
-	out.Status = proto.String("ok")
+	out.Status = "ok"
 
 	return tpl.String()
 }

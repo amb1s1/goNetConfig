@@ -40,11 +40,11 @@ func newGeneratorsRegistry() *generatorsRegistry {
 
 func (s *server) GetConfigGen(ctx context.Context, in *pb.ConfigGenRequest) (*pb.ConfigGenResponse, error) {
 	out := &pb.ConfigGenResponse{
-		ConfigFeature: &pb.ConfigFeature{},
+		ConfigFeature: []*pb.ConfigFeature{},
 	}
 	for _, g := range Registry.generators {
 		if generatorSupported(g.Generators(), in) {
-			out.ConfigFeature = g.Render(ctx, in, out)
+			out.ConfigFeature = append(out.ConfigFeature, g.Render(ctx, in, out))
 		}
 	}
 	return out, nil
@@ -62,10 +62,10 @@ func (g *generatorsRegistry) RegisterFeatures() error {
 }
 
 func generatorSupported(gen *base.Generator, in *pb.ConfigGenRequest) bool {
-	if !isVendorSupported(gen, in.Device.Vendor) {
+	if !isVendorSupported(gen, &in.Device.Vendor) {
 		return false
 	}
-	if !isModelSupported(gen, in.Device.Model) {
+	if !isModelSupported(gen, &in.Device.Model) {
 		return false
 	}
 	return true

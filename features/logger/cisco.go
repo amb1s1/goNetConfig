@@ -6,7 +6,6 @@ import (
 	"text/template"
 
 	pb "github.com/amb1s1/gonetconfig/proto"
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -17,7 +16,7 @@ var (
 
 func ciscoRender(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
 	p := params{
-		Hostname:            *in.Device.Name,
+		Hostname:            in.Device.Name,
 		ManagementInterface: mgtInterface,
 		LoggerServerIPS:     loggerIPS,
 	}
@@ -38,9 +37,8 @@ func defaultRender(out *pb.ConfigGenResponse, p params) string {
 		log.Printf("Execute(), failed to Execute template for %s feature", featureName)
 	}
 	if tpl.String() == "" {
-		out.Status = proto.String("template not generated")
+		out.Status = "template not generated"
 	}
-	out.Status = proto.String("ok")
-
+	out.Status = "ok"
 	return tpl.String()
 }

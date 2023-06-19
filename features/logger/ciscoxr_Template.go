@@ -1,6 +1,6 @@
 package logger
 
-// ciscoxrTacacsTemplate is the template for CiscoXR AAA Tacacs.
+// ciscoxrTacacsTemplate is the template for CiscoXR logger.
 const ciscoxrTemplate = `
 !
 service timestamps log datetime msec show-timezone
@@ -19,7 +19,7 @@ logging buffered informational
 logging facility local1
 {{ range .LoggerServerIPS }}
 logging {{ . }} vrf default severity debugging port default
-{{ end }}{{/* end range VIPs */}}
+{{ end }}
 logging source-interface {{ .ManagementInterface }}
 logging hostnameprefix {{ .Hostname }}
 !
