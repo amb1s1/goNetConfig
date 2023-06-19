@@ -7,6 +7,7 @@ import (
 
 	"github.com/amb1s1/gonetconfig/base"
 	"github.com/amb1s1/gonetconfig/features/aaa"
+	"github.com/amb1s1/gonetconfig/features/logger"
 
 	pb "github.com/amb1s1/gonetconfig/proto"
 )
@@ -15,6 +16,7 @@ var (
 	Registry     = newGeneratorsRegistry()
 	allGenerator = []func() base.GeneratorInt{
 		aaa.New,
+		logger.New,
 	}
 )
 
