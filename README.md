@@ -1,4 +1,4 @@
-
+[![Go](https://github.com/amb1s1/goNetConfig/actions/workflows/go.yml/badge.svg)](https://github.com/amb1s1/goNetConfig/actions/workflows/go.yml)
 # GoNetConfig
 
 GoNetConfig is a Go-based application that provides network configuration generation services. It uses gRPC for communication and supports multiple configuration feature generators.
