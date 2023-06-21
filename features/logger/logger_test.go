@@ -1,4 +1,4 @@
-package aaa
+package logger
 
 import (
 	"context"
@@ -10,48 +10,58 @@ import (
 )
 
 var (
-	ciscoAAA = `
+	cisco = `
 !
-usergroup priv15
- taskgroup root-lr
- taskgroup cisco-support
+service timestamps log datetime msec show-timezone
+logging trap informational
+logging archive
+ device harddisk
+ severity informational
+ file-size 10
+ archive-size 100
+ archive-length 52
 !
-username netops
- group root-lr
- group cisco-support
- secret 5 password!123
+logging console disable
+logging monitor informational
+logging buffered 10000000
+logging buffered informational
+logging facility local1
+logging 192.168.1.1 vrf default severity debugging port default
+logging 192.168.1.2 vrf default severity debugging port default
+logging source-interface loopback0
+logging hostnameprefix rt01.foo01
 !
 `
 )
 
-func TestAAA(t *testing.T) {
+func TestLogger(t *testing.T) {
 	tests := []struct {
 		name       string
 		device     *pb.Device
 		wantConfig *pb.ConfigFeature
 	}{
 		{
-			name: "AAA: not supported vendor => success.",
+			name: "Logger: not supported vendor => success.",
 			device: &pb.Device{
 				Name:   "rt01.foo01",
 				Vendor: pb.Vendor_VD_ARISTA,
 			},
 			wantConfig: &pb.ConfigFeature{
-				Name:          "aaa",
+				Name:          "logger",
 				Version:       1,
 				Configuration: "",
 			},
 		},
 		{
-			name: "AAA: Cisco triple aaa config => success.",
+			name: "Logger: Cisco config => success.",
 			device: &pb.Device{
 				Name:   "rt01.foo01",
 				Vendor: pb.Vendor_VD_CISCO,
 			},
 			wantConfig: &pb.ConfigFeature{
-				Name:          "aaa",
+				Name:          "logger",
 				Version:       1,
-				Configuration: ciscoAAA,
+				Configuration: cisco,
 			},
 		},
 	}
@@ -69,5 +79,4 @@ func TestAAA(t *testing.T) {
 			}
 		})
 	}
-
 }

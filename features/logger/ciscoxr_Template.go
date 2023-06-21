@@ -17,9 +17,9 @@ logging monitor informational
 logging buffered 10000000
 logging buffered informational
 logging facility local1
-{{ range .LoggerServerIPS }}
+{{- range .LoggerServerIPS }}
 logging {{ . }} vrf default severity debugging port default
-{{ end }}
+{{- end }}
 logging source-interface {{ .ManagementInterface }}
 logging hostnameprefix {{ .Hostname }}
 !
