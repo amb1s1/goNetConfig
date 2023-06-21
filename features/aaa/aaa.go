@@ -54,7 +54,3 @@ func renderTemplate(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
 	}
 	return render
 }
-
-func isSupported(model string) bool {
-	return true
-}

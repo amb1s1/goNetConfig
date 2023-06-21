@@ -26,6 +26,7 @@ enum Vendor {
 
 enum Model {
     MD_UNKNOW = 0;
+    MD_C3560CX = 1;
 }
 
 enum OS {
@@ -35,6 +36,7 @@ enum OS {
 message ConfigFeature {
 	string name = 1;
 	int32 version = 2;
+    
 	string configuration = 3;
 }
 
