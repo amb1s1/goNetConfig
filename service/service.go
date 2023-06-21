@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	Registry     = newGeneratorsRegistry()
+	// Registry is a map of generators, keyed by their type.
+	Registry = newGeneratorsRegistry()
+	// allGenerator is a list of all available generators.
 	allGenerator = []func() base.GeneratorInt{
 		aaa.New,
 		logger.New,
@@ -28,6 +30,7 @@ type server struct {
 	pb.UnimplementedGoNetConfigServiceServer
 }
 
+// NewServer creates a new server.
 func NewServer() *server {
 	return &server{}
 }
@@ -38,6 +41,7 @@ func newGeneratorsRegistry() *generatorsRegistry {
 	}
 }
 
+// GetConfigGen gets a config generator for the specified device.
 func (s *server) GetConfigGen(ctx context.Context, in *pb.ConfigGenRequest) (*pb.ConfigGenResponse, error) {
 	out := &pb.ConfigGenResponse{
 		ConfigFeature: []*pb.ConfigFeature{},
@@ -50,6 +54,7 @@ func (s *server) GetConfigGen(ctx context.Context, in *pb.ConfigGenRequest) (*pb
 	return out, nil
 }
 
+// RegisterFeatures registers all available generators with the registry.
 func (g *generatorsRegistry) RegisterFeatures() error {
 	for _, generator := range allGenerator {
 		kind := reflect.TypeOf(generator())
@@ -70,6 +75,7 @@ func generatorSupported(gen *base.Generator, in *pb.ConfigGenRequest) bool {
 	}
 	return true
 }
+
 func isVendorSupported(gen *base.Generator, vendor *pb.Vendor) bool {
 	return vendor == nil || gen.SupportedVendor[*vendor] || *vendor == pb.Vendor_VD_UNKNOW
 }
