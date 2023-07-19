@@ -112,6 +112,3 @@ Contributions to the GoNetConfig project are welcome! If you find any issues or 
 ## License
 
 The GoNetConfig project is licensed under the [MIT License](https://opensource.org/licenses/MIT). See the `LICENSE` file for more details.
-```
-
-You can simply copy and paste the above markdown into your README file.
