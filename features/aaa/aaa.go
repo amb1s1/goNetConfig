@@ -9,7 +9,8 @@ import (
 )
 
 type Generator struct {
-	baseGen *base.Generator
+	baseGen      *base.Generator
+	entityParams map[string]interface{}
 }
 
 const (
@@ -34,7 +35,7 @@ func New() base.GeneratorInt {
 }
 
 func (g *Generator) Render(ctx context.Context, in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) *pb.ConfigFeature {
-	rendering := renderTemplate(in, out)
+	rendering := g.renderTemplate(in, out)
 	return &pb.ConfigFeature{
 		Name:          featureName,
 		Version:       1,
@@ -46,11 +47,28 @@ func (g *Generator) Generators() *base.Generator {
 	return g.baseGen
 }
 
-func renderTemplate(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
+// SetParams injects entity-specific parameters into the generator.
+func (g *Generator) SetParams(p map[string]interface{}) {
+	g.entityParams = p
+}
+
+// getSecret returns the entity param secret or falls back to the default.
+func (g *Generator) getSecret() string {
+	if g.entityParams != nil {
+		if v, ok := g.entityParams["secret"]; ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return defaultSecret
+}
+
+func (g *Generator) renderTemplate(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
 	var render string
 	switch in.GetDevice().GetVendor() {
 	case pb.Vendor_VD_CISCO:
-		render = ciscoRender(in, out)
+		render = g.ciscoRender(in, out)
 	}
 	return render
 }

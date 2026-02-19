@@ -9,16 +9,16 @@ import (
 )
 
 var (
-	version      int32 = 1
-	mgtInterface       = "loopback0"
-	loggerIPS          = []string{"192.168.1.1", "192.168.1.2"}
+	version            int32 = 1
+	defaultMgtInterface      = "loopback0"
+	defaultLoggerIPs         = []string{"192.168.1.1", "192.168.1.2"}
 )
 
-func ciscoRender(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
+func (g *Generator) ciscoRender(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
 	p := params{
 		Hostname:            in.Device.Name,
-		ManagementInterface: mgtInterface,
-		LoggerServerIPS:     loggerIPS,
+		ManagementInterface: g.getManagementInterface(),
+		LoggerServerIPS:     g.getLoggerServerIPs(),
 	}
 	switch in.Device.GetModel() {
 	default:

@@ -9,7 +9,8 @@ import (
 )
 
 type Generator struct {
-	baseGen *base.Generator
+	baseGen      *base.Generator
+	entityParams map[string]interface{}
 }
 
 const (
@@ -36,7 +37,7 @@ func New() base.GeneratorInt {
 }
 
 func (g *Generator) Render(ctx context.Context, in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) *pb.ConfigFeature {
-	rendering := renderTemplate(in, out)
+	rendering := g.renderTemplate(in, out)
 	return &pb.ConfigFeature{
 		Name:          featureName,
 		Version:       1,
@@ -48,11 +49,46 @@ func (g *Generator) Generators() *base.Generator {
 	return g.baseGen
 }
 
-func renderTemplate(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
+// SetParams injects entity-specific parameters into the generator.
+func (g *Generator) SetParams(p map[string]interface{}) {
+	g.entityParams = p
+}
+
+// getManagementInterface returns the entity param or falls back to the default.
+func (g *Generator) getManagementInterface() string {
+	if g.entityParams != nil {
+		if v, ok := g.entityParams["management_interface"]; ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return defaultMgtInterface
+}
+
+// getLoggerServerIPs returns the entity param or falls back to the default.
+func (g *Generator) getLoggerServerIPs() []string {
+	if g.entityParams != nil {
+		if v, ok := g.entityParams["logger_server_ips"]; ok {
+			if slice, ok := v.([]interface{}); ok {
+				ips := make([]string, 0, len(slice))
+				for _, item := range slice {
+					if s, ok := item.(string); ok {
+						ips = append(ips, s)
+					}
+				}
+				return ips
+			}
+		}
+	}
+	return defaultLoggerIPs
+}
+
+func (g *Generator) renderTemplate(in *pb.ConfigGenRequest, out *pb.ConfigGenResponse) string {
 	var render string
 	switch in.GetDevice().GetVendor() {
 	case pb.Vendor_VD_CISCO:
-		render = ciscoRender(in, out)
+		render = g.ciscoRender(in, out)
 	}
 	return render
 }

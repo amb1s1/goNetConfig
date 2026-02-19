@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/amb1s1/gonetconfig/base"
+	"github.com/amb1s1/gonetconfig/entity"
 	"github.com/amb1s1/gonetconfig/features/aaa"
 	"github.com/amb1s1/gonetconfig/features/logger"
 
@@ -23,7 +24,8 @@ var (
 )
 
 type generatorsRegistry struct {
-	generators map[reflect.Type]base.GeneratorInt
+	generators     map[reflect.Type]base.GeneratorInt
+	entityResolved *entity.ResolvedEntity
 }
 
 type server struct {
@@ -41,12 +43,44 @@ func newGeneratorsRegistry() *generatorsRegistry {
 	}
 }
 
+// SetEntity configures the registry with a resolved entity, applying feature
+// filtering and parameter injection to all registered generators.
+func (g *generatorsRegistry) SetEntity(resolved *entity.ResolvedEntity) {
+	g.entityResolved = resolved
+	if resolved == nil {
+		return
+	}
+	for _, gen := range g.generators {
+		featureName := gen.Generators().Name
+		if params, ok := resolved.Params[featureName]; ok {
+			gen.SetParams(params)
+		}
+	}
+}
+
+// isFeatureEnabled checks if a feature is enabled for the current entity.
+// If no entity is configured, all features are enabled.
+func (g *generatorsRegistry) isFeatureEnabled(featureName string) bool {
+	if g.entityResolved == nil {
+		return true
+	}
+	for _, f := range g.entityResolved.Features {
+		if f == featureName {
+			return true
+		}
+	}
+	return false
+}
+
 // GetConfigGen gets a config generator for the specified device.
 func (s *server) GetConfigGen(ctx context.Context, in *pb.ConfigGenRequest) (*pb.ConfigGenResponse, error) {
 	out := &pb.ConfigGenResponse{
 		ConfigFeature: []*pb.ConfigFeature{},
 	}
 	for _, g := range Registry.generators {
+		if !Registry.isFeatureEnabled(g.Generators().Name) {
+			continue
+		}
 		if generatorSupported(g.Generators(), in) {
 			out.ConfigFeature = append(out.ConfigFeature, g.Render(ctx, in, out))
 		}

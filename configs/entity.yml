@@ -1,0 +1,38 @@
+version: "1.0"
+
+# Feature parameters per entity
+params:
+  companyA:
+    aaa:
+      secret: "companyA-secret-123"
+    logger:
+      management_interface: "loopback0"
+      logger_server_ips:
+        - "10.0.1.1"
+        - "10.0.1.2"
+  companyB:
+    aaa:
+      secret: "companyB-secret-456"
+    logger:
+      management_interface: "loopback1"
+      logger_server_ips:
+        - "172.16.0.1"
+
+# Which features each entity enables
+features:
+  companyA:
+    - aaa
+    - logger
+  companyB:
+    - aaa
+
+# Named entity definitions
+entity:
+  companyA:
+    features: companyA
+    params: companyA
+  companyB:
+    features: companyB
+    params: companyB
+
+selected_entity: companyA
