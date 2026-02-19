@@ -297,6 +297,77 @@ func TestServiceWithSampleEntityConfigs(t *testing.T) {
 	}
 }
 
+func TestSetEntityResetsParamsOnSwitchAndNil(t *testing.T) {
+	// Save and restore global Registry
+	origRegistry := Registry
+	defer func() { Registry = origRegistry }()
+
+	Registry = newGeneratorsRegistry()
+	err := Registry.RegisterFeatures()
+	assert.NoError(t, err)
+
+	request := &pb.ConfigGenRequest{
+		Device: &pb.Device{
+			Name:   "rt01.foo01",
+			Vendor: pb.Vendor_VD_CISCO,
+		},
+	}
+	server := NewServer()
+
+	// 1) Set entity with custom logger params.
+	Registry.SetEntity(&entity.ResolvedEntity{
+		Name:     "A",
+		Features: []string{"aaa", "logger"},
+		Params: map[string]map[string]interface{}{
+			"logger": {
+				"management_interface": "loopback77",
+				"logger_server_ips":    []interface{}{"9.9.9.9"},
+			},
+		},
+	})
+
+	respA, err := server.GetConfigGen(context.Background(), request)
+	assert.NoError(t, err)
+	featuresA := make(map[string]*pb.ConfigFeature)
+	for _, f := range respA.ConfigFeature {
+		featuresA[f.Name] = f
+	}
+	assert.Contains(t, featuresA["logger"].Configuration, "loopback77")
+	assert.Contains(t, featuresA["logger"].Configuration, "9.9.9.9")
+
+	// 2) Switch to entity with logger enabled but without logger params.
+	// Logger must fall back to defaults instead of keeping previous values.
+	Registry.SetEntity(&entity.ResolvedEntity{
+		Name:     "B",
+		Features: []string{"aaa", "logger"},
+		Params: map[string]map[string]interface{}{
+			"aaa": {"secret": "only-aaa-custom"},
+		},
+	})
+
+	respB, err := server.GetConfigGen(context.Background(), request)
+	assert.NoError(t, err)
+	featuresB := make(map[string]*pb.ConfigFeature)
+	for _, f := range respB.ConfigFeature {
+		featuresB[f.Name] = f
+	}
+	assert.Contains(t, featuresB["logger"].Configuration, "loopback0")
+	assert.Contains(t, featuresB["logger"].Configuration, "192.168.1.1")
+	assert.NotContains(t, featuresB["logger"].Configuration, "loopback77")
+	assert.NotContains(t, featuresB["logger"].Configuration, "9.9.9.9")
+
+	// 3) Set nil entity. Defaults should still be used.
+	Registry.SetEntity(nil)
+	respNil, err := server.GetConfigGen(context.Background(), request)
+	assert.NoError(t, err)
+	featuresNil := make(map[string]*pb.ConfigFeature)
+	for _, f := range respNil.ConfigFeature {
+		featuresNil[f.Name] = f
+	}
+	assert.Contains(t, featuresNil["logger"].Configuration, "loopback0")
+	assert.Contains(t, featuresNil["logger"].Configuration, "192.168.1.1")
+}
+
 func sampleConfigPath(t *testing.T, fileName string) string {
 	t.Helper()
 

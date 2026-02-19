@@ -47,9 +47,15 @@ func newGeneratorsRegistry() *generatorsRegistry {
 // filtering and parameter injection to all registered generators.
 func (g *generatorsRegistry) SetEntity(resolved *entity.ResolvedEntity) {
 	g.entityResolved = resolved
+	// Always reset params first to avoid leaking values across entity changes.
+	for _, gen := range g.generators {
+		gen.SetParams(nil)
+	}
+
 	if resolved == nil {
 		return
 	}
+
 	for _, gen := range g.generators {
 		featureName := gen.Generators().Name
 		if params, ok := resolved.Params[featureName]; ok {
