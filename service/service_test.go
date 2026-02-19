@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"path/filepath"
+	"runtime"
 	"testing"
 
+	"github.com/amb1s1/gonetconfig/entity"
 	pb "github.com/amb1s1/gonetconfig/proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
@@ -107,4 +110,199 @@ func TestService(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServiceWithEntity(t *testing.T) {
+	// Save and restore global Registry
+	origRegistry := Registry
+	defer func() { Registry = origRegistry }()
+
+	t.Run("entity filters features to aaa only", func(t *testing.T) {
+		Registry = newGeneratorsRegistry()
+		err := Registry.RegisterFeatures()
+		assert.NoError(t, err)
+
+		resolved := &entity.ResolvedEntity{
+			Name:     "testEntity",
+			Features: []string{"aaa"},
+			Params: map[string]map[string]interface{}{
+				"aaa": {"secret": "entity-secret-789"},
+			},
+		}
+		Registry.SetEntity(resolved)
+
+		ctx := context.TODO()
+		request := &pb.ConfigGenRequest{
+			Device: &pb.Device{
+				Name:   "rt01.foo01",
+				Vendor: pb.Vendor_VD_CISCO,
+			},
+		}
+
+		server := NewServer()
+		response, err := server.GetConfigGen(ctx, request)
+		assert.NoError(t, err)
+
+		// Should only have aaa, not logger
+		assert.Len(t, response.ConfigFeature, 1)
+		assert.Equal(t, "aaa", response.ConfigFeature[0].Name)
+		// Should use entity secret
+		assert.Contains(t, response.ConfigFeature[0].Configuration, "entity-secret-789")
+	})
+
+	t.Run("entity with all features and custom params", func(t *testing.T) {
+		Registry = newGeneratorsRegistry()
+		err := Registry.RegisterFeatures()
+		assert.NoError(t, err)
+
+		resolved := &entity.ResolvedEntity{
+			Name:     "fullEntity",
+			Features: []string{"aaa", "logger"},
+			Params: map[string]map[string]interface{}{
+				"aaa": {"secret": "full-secret"},
+				"logger": {
+					"management_interface": "loopback99",
+					"logger_server_ips":    []interface{}{"1.2.3.4"},
+				},
+			},
+		}
+		Registry.SetEntity(resolved)
+
+		ctx := context.TODO()
+		request := &pb.ConfigGenRequest{
+			Device: &pb.Device{
+				Name:   "rt01.foo01",
+				Vendor: pb.Vendor_VD_CISCO,
+			},
+		}
+
+		server := NewServer()
+		response, err := server.GetConfigGen(ctx, request)
+		assert.NoError(t, err)
+
+		assert.Len(t, response.ConfigFeature, 2)
+
+		// Find features by name since map iteration order is not guaranteed
+		featureMap := make(map[string]*pb.ConfigFeature)
+		for _, f := range response.ConfigFeature {
+			featureMap[f.Name] = f
+		}
+
+		aaaFeature := featureMap["aaa"]
+		assert.NotNil(t, aaaFeature)
+		assert.Contains(t, aaaFeature.Configuration, "full-secret")
+
+		loggerFeature := featureMap["logger"]
+		assert.NotNil(t, loggerFeature)
+		assert.Contains(t, loggerFeature.Configuration, "loopback99")
+		assert.Contains(t, loggerFeature.Configuration, "1.2.3.4")
+		assert.NotContains(t, loggerFeature.Configuration, "192.168.1.1")
+	})
+
+	t.Run("nil entity uses all features with defaults", func(t *testing.T) {
+		Registry = newGeneratorsRegistry()
+		err := Registry.RegisterFeatures()
+		assert.NoError(t, err)
+
+		Registry.SetEntity(nil)
+
+		ctx := context.TODO()
+		request := &pb.ConfigGenRequest{
+			Device: &pb.Device{
+				Name:   "rt01.foo01",
+				Vendor: pb.Vendor_VD_CISCO,
+			},
+		}
+
+		server := NewServer()
+		response, err := server.GetConfigGen(ctx, request)
+		assert.NoError(t, err)
+
+		// Should have both features with default values
+		assert.Len(t, response.ConfigFeature, 2)
+	})
+}
+
+func TestServiceWithSampleEntityConfigs(t *testing.T) {
+	// Save and restore global Registry
+	origRegistry := Registry
+	defer func() { Registry = origRegistry }()
+
+	tests := []struct {
+		name            string
+		sampleConfig    string
+		wantFeatureCnt  int
+		wantHasLogger   bool
+		wantAAAContains string
+		wantLogContains string
+	}{
+		{
+			name:            "sample companyA enables aaa and logger",
+			sampleConfig:    "entity_company_a.yml",
+			wantFeatureCnt:  2,
+			wantHasLogger:   true,
+			wantAAAContains: "sample-a-secret",
+			wantLogContains: "10.10.10.1",
+		},
+		{
+			name:            "sample companyB enables only aaa",
+			sampleConfig:    "entity_company_b.yml",
+			wantFeatureCnt:  1,
+			wantHasLogger:   false,
+			wantAAAContains: "sample-b-secret",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			Registry = newGeneratorsRegistry()
+			err := Registry.RegisterFeatures()
+			assert.NoError(t, err)
+
+			cfg, err := entity.Load(sampleConfigPath(t, tc.sampleConfig))
+			assert.NoError(t, err)
+
+			resolved, err := cfg.GetSelectedEntity()
+			assert.NoError(t, err)
+
+			Registry.SetEntity(resolved)
+
+			request := &pb.ConfigGenRequest{
+				Device: &pb.Device{
+					Name:   "rt01.foo01",
+					Vendor: pb.Vendor_VD_CISCO,
+				},
+			}
+
+			server := NewServer()
+			response, err := server.GetConfigGen(context.Background(), request)
+			assert.NoError(t, err)
+			assert.Len(t, response.ConfigFeature, tc.wantFeatureCnt)
+
+			featureMap := make(map[string]*pb.ConfigFeature)
+			for _, f := range response.ConfigFeature {
+				featureMap[f.Name] = f
+			}
+
+			aaaFeature := featureMap["aaa"]
+			assert.NotNil(t, aaaFeature)
+			assert.Contains(t, aaaFeature.Configuration, tc.wantAAAContains)
+
+			loggerFeature, hasLogger := featureMap["logger"]
+			assert.Equal(t, tc.wantHasLogger, hasLogger)
+			if tc.wantHasLogger {
+				assert.Contains(t, loggerFeature.Configuration, tc.wantLogContains)
+			}
+		})
+	}
+}
+
+func sampleConfigPath(t *testing.T, fileName string) string {
+	t.Helper()
+
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("failed to resolve caller path")
+	}
+	return filepath.Join(filepath.Dir(thisFile), "..", "configs", "samples", fileName)
 }
