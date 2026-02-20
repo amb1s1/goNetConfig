@@ -1,0 +1,31 @@
+version: "1.0"
+
+params:
+  companyA:
+    aaa:
+      secret: "sample-a-secret"
+    logger:
+      management_interface: "loopback10"
+      logger_server_ips:
+        - "10.10.10.1"
+        - "10.10.10.2"
+  companyB:
+    aaa:
+      secret: "sample-b-secret"
+
+features:
+  companyA:
+    - aaa
+    - logger
+  companyB:
+    - aaa
+
+entity:
+  companyA:
+    features: companyA
+    params: companyA
+  companyB:
+    features: companyB
+    params: companyB
+
+selected_entity: companyA

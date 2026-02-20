@@ -1,11 +1,9 @@
 [![Go](https://github.com/amb1s1/goNetConfig/actions/workflows/go.yml/badge.svg)](https://github.com/amb1s1/goNetConfig/actions/workflows/go.yml)
 # GoNetConfig
 
-GoNetConfig is a Go-based application that provides network configuration generation services. It uses gRPC for communication and supports multiple configuration feature generators.
+GoNetConfig is a Go-based application that provides network configuration generation services. It uses gRPC for communication and supports multiple configuration feature generators with per-entity (company/tenant) customization.
 
 ## Installation
-
-To install and run the GoNetConfig application, follow these steps:
 
 1. Make sure you have Go installed on your system.
 
@@ -19,22 +17,79 @@ To install and run the GoNetConfig application, follow these steps:
    cd gonetconfig
    ```
 
-4. Install the dependencies:
+4. Build and run:
    ```
-   go mod download
-   ```
-
-5. Build the application:
-   ```
-   go build -o gonetconfig .
-   ```
-
-6. Run the application:
-   ```
-   ./gonetconfig
+   make build
+   make run
    ```
 
    The application will start and listen for gRPC requests on `localhost:50051`.
+
+## Entity Configuration
+
+GoNetConfig supports multi-tenant configuration through the **entity** system. Each entity (e.g. a company) can have its own set of enabled features and feature-specific parameters.
+
+### Setup
+
+Copy the template config to your home directory:
+
+```bash
+make entity-init
+```
+
+This creates `~/.gonetconfig/entity.yml` from the template in `configs/entity.yml`.
+
+### Config File Structure
+
+```yaml
+version: "1.0"
+
+# Feature parameters per entity
+params:
+  companyA:
+    aaa:
+      secret: "companyA-secret-123"
+    logger:
+      management_interface: "loopback0"
+      logger_server_ips:
+        - "10.0.1.1"
+        - "10.0.1.2"
+  companyB:
+    aaa:
+      secret: "companyB-secret-456"
+
+# Which features each entity enables
+features:
+  companyA:
+    - aaa
+    - logger
+  companyB:
+    - aaa
+
+# Named entity definitions
+entity:
+  companyA:
+    features: companyA
+    params: companyA
+  companyB:
+    features: companyB
+    params: companyB
+
+selected_entity: companyA
+```
+
+### Config Loading Order
+
+1. `~/.gonetconfig/entity.yml` (user config)
+2. `configs/entity.yml` (template/fallback)
+3. If neither exists, all features run with hardcoded defaults
+
+### Switching Entities
+
+Edit the `selected_entity` field in your config file to switch between entities. The selected entity controls:
+
+- **Which features are generated** (via the `features` list)
+- **What parameter values are used** (via the `params` map)
 
 ## Usage
 
@@ -68,42 +123,93 @@ The GoNetConfig application supports multiple configuration generators. Each gen
 
 2. Inside the package, create a Go file that contains the implementation of your generator. For example, create a file named `dns.go`.
 
-3. Implement the `GeneratorInt` interface defined in the `base/base.go` file. This interface requires the implementation of the `Render` method, which generates the network configuration feature. You can use the existing generators as examples.
+3. Implement the `GeneratorInt` interface defined in the `base/base.go` file. This interface requires the implementation of the `Render`, `Generators`, and `SetParams` methods.
+
+   ```go
+   type GeneratorInt interface {
+       Render(context.Context, *pb.ConfigGenRequest, *pb.ConfigGenResponse) *pb.ConfigFeature
+       Generators() *Generator
+       SetParams(map[string]interface{})
+   }
+   ```
 
 4. Register your generator in the `service/service.go` file. Add the import statement for your generator package and include a new function in the `allGenerator` slice that returns an instance of your generator.
 
    ```go
    allGenerator = []func() base.GeneratorInt{
        aaa.New,
+       logger.New,
        dns.New,
    }
    ```
 
-5. Implement the necessary logic in your generator to generate the desired network configuration feature. You can use templates or any other method suitable for your feature generation.
+5. Add your feature's parameters to `configs/entity.yml` under the appropriate entity params and features lists.
 
-6. Update the `proto/service.proto` file to include the necessary message types and enums for your new feature. Refer to the existing messages as examples.
+6. Update the `proto/service.proto` file to include the necessary message types and enums for your new feature if needed.
 
 7. Run the following command to regenerate the gRPC code based on the updated `.proto` file:
 
    ```bash
-   protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/service.proto
+   make proto
    ```
 
-8. Rebuild and run the GoNetConfig application to apply your changes.
+8. Rebuild and run the GoNetConfig application:
+
+   ```bash
+   make build && make run
+   ```
 
 ## Project Structure
 
-The GoNetConfig project follows the following structure:
+```
+.
+├── main.go                         # Entry point, loads entity config and starts server
+├── Makefile                        # Build, test, and development commands
+├── base/
+│   └── base.go                     # GeneratorInt interface and base types
+├── configs/
+│   └── entity.yml                  # Template entity configuration
+├── entity/
+│   ├── entity.go                   # Entity config loading, selection, parsing
+│   └── entity_test.go              # Entity tests
+├── features/
+│   ├── aaa/
+│   │   ├── aaa.go                  # AAA feature generator
+│   │   ├── cisco.go                # Cisco AAA renderer
+│   │   ├── ciscoxr_template.go     # AAA template
+│   │   └── aaa_test.go             # AAA tests
+│   └── logger/
+│       ├── logger.go               # Logger feature generator
+│       ├── cisco.go                # Cisco logger renderer
+│       ├── ciscoxr_Template.go     # Logger template
+│       └── logger_test.go          # Logger tests
+├── service/
+│   ├── service.go                  # gRPC service, generator registry, entity integration
+│   └── service_test.go             # Service tests
+├── server/
+│   ├── server.go                   # gRPC server setup
+│   └── server_test.go              # Server tests
+├── client/
+│   └── main.go                     # gRPC client example
+└── proto/
+    ├── service.proto               # Protobuf service definition
+    ├── service.pb.go               # Generated protobuf code
+    └── service_grpc.pb.go          # Generated gRPC code
+```
 
-- `main.go`: The entry point of the application that starts the gRPC server and registers the configuration generators.
+## Makefile Targets
 
-- `service/service.go`: Contains the gRPC service implementation and the registry of configuration generators.
-
-- `proto/service.proto`: Defines the gRPC service and message types using Protocol Buffers.
-
-- `features/aaa/aaa.go`: Implements the `aaa` configuration generator.
-
-- `base/base.go`: Defines the base structures and interfaces used by configuration generators.
+| Target | Description |
+|--------|-------------|
+| `make build` | Build the application binary |
+| `make run` | Run the application |
+| `make test` | Run all tests |
+| `make test-v` | Run all tests with verbose output |
+| `make vet` | Run `go vet` on all packages |
+| `make clean` | Remove build artifacts |
+| `make proto` | Regenerate gRPC code from `.proto` files |
+| `make entity-init` | Copy template entity config to `~/.gonetconfig/` |
+| `make help` | Show all available targets |
 
 ## Contributing
 
