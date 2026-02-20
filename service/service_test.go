@@ -105,7 +105,18 @@ func TestService(t *testing.T) {
 			if want, got := test.wantRespo.Status, response.Status; want != got {
 				t.Errorf("unexpected status, want: %s, got: %s", want, got)
 			}
-			if diff := cmp.Diff(test.wantRespo.ConfigFeature, response.ConfigFeature); diff != "" {
+			// Compare features by name since map iteration order is not guaranteed.
+			wantFeatureMap := make(map[string]*pb.ConfigFeature)
+			for _, f := range test.wantRespo.ConfigFeature {
+				wantFeatureMap[f.Name] = f
+			}
+
+			gotFeatureMap := make(map[string]*pb.ConfigFeature)
+			for _, f := range response.ConfigFeature {
+				gotFeatureMap[f.Name] = f
+			}
+
+			if diff := cmp.Diff(wantFeatureMap, gotFeatureMap); diff != "" {
 				t.Errorf("unexpected diff(want- got+): %v", diff)
 			}
 		})
